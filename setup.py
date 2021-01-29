@@ -9,7 +9,7 @@ setuptools.setup(
     # long_description=long_description,
     # long_description_content_type="text/markdown",
     url="https://github.com/StijnDebackere/plotting_tools",
-    py_modules=['axes', 'colorbar', 'legend'],
+    packages=['plotting_tools'],
     install_requires=[
         "matplotlib",
         "numpy",
