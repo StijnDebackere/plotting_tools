@@ -31,7 +31,7 @@ def get_partial_cmap_mappable(
     sm = plt.cm.ScalarMappable(norm=norm(**norm_kwargs), cmap=partial_cmap)
     cmap = sm.to_rgba
 
-    return sm
+    return cmap
 
 
 def add_colorbar_indexed(
@@ -51,6 +51,7 @@ def add_colorbar_indexed(
     if ticks not in ticks_options:
         raise ValueError(f'ticks should be one of {ticks_options}')
 
+    # see https://matplotlib.org/stable/tutorials/colors/colorbar_only.html
     if ticks == 'center':
         # increment between ticks
         delta = (items[-1] - items[0]) / len(items)
@@ -68,13 +69,17 @@ def add_colorbar_indexed(
         # data boundaries for the colormap
         bounds = items[0] + np.array([i * delta for i in range(len(items))])
         # map data value to colormap index
-        norm = mpl.colors.BoundaryNorm(bounds, len(items) - 1)
+        norm = mpl.colors.BoundaryNorm(bounds, len(items - 1))
         ticks = bounds
 
     elif ticks is None:
         norm = mpl.colors.Normalize(min(items), max(items))
         bounds = None
         ticks = None
+
+    # ensure that cmap_indexed has expected number of colors
+    if ticks is not None and cmap_indexed.N != norm.Ncmap:
+        cmap_indexed = cmap_indexed._resample(norm.Ncmap)
 
     # get fake ScalarMappable for colorbar
     # this will convert data values to the given colormap
