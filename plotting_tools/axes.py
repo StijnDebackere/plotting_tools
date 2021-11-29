@@ -1,5 +1,5 @@
 def set_spines_labels(
-        ax, left=True, right=True, top=True, bottom=False,
+        ax, left=True, right=True, top=True, bottom=True,
         labels=False):
     """Remove the spines of the given axes instance and modify the labels."""
     ax.spines["left"].set_visible(left)

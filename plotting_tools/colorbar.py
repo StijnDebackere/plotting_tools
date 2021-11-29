@@ -2,6 +2,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+import plotting_tools.tools as tools
+
 
 def get_partial_cmap(cmap, a=0.25, b=1):
     """Return cmap but sampled from a to b."""
@@ -21,10 +23,26 @@ def get_partial_cmap_indexed(cmap, N, a=0.25, b=1):
     return partial_cmap
 
 
+def get_partial_cmap_mappable(
+        cmap, norm=mpl.colors.Normalize, a=0.25, b=1, **norm_kwargs
+):
+    """Return cmap mapping values between vmin and vmax."""
+    partial_cmap = get_partial_cmap(cmap=cmap, a=a, b=b)
+    sm = plt.cm.ScalarMappable(norm=norm(**norm_kwargs), cmap=partial_cmap)
+    cmap = sm.to_rgba
+
+    return sm
+
+
 def add_colorbar_indexed(
-        cmap_indexed, items, fig=None, ax_cb=None,
+        cmap_indexed,
+        items,
+        fig=None,
+        ax_cb=None,
         ticks='center',
-        **cbar_kwargs):
+        labels=None,
+        **cbar_kwargs
+):
     """Put the colorbar with cmap_indexed over items in ax_cb. If ticks_at_values,
     ticks are centered on values.
 
