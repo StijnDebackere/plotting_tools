@@ -41,8 +41,7 @@ def add_colorbar_indexed(
         ax_cb=None,
         tick_positions='center',
         ticks=None,
-        norm_kwargs=None,
-        cbar_kwargs=None,
+        **cbar_kwargs,
 ):
     """Put the colorbar with cmap_indexed over items in ax_cb.
 
@@ -60,8 +59,6 @@ def add_colorbar_indexed(
         interpret items as bin centers or bin edges
     ticks : Optional[array-like]
         ticks to draw, ignored if tick_options is set
-    norm_kwargs : dict
-        kwargs for Normalize is tick_positions is None or BoundaryNorm otherwise
     cbar_kwargs : dict
         kwargs for Colorbar
 
@@ -73,8 +70,6 @@ def add_colorbar_indexed(
     if tick_positions not in ticks_options:
         raise ValueError(f'tick_positions should be one of {ticks_options}')
 
-    norm_kwargs = {} or norm_kwargs
-    cbar_kwargs = {} or cbar_kwargs
     # see https://matplotlib.org/stable/tutorials/colors/colorbar_only.html
     if tick_positions == 'center':
         # increment between ticks
@@ -82,7 +77,7 @@ def add_colorbar_indexed(
         # data boundaries for the colormap
         bounds = items[0] + np.array([i * delta for i in range(len(items) + 1)])
         # map data value to colormap index
-        norm = mpl.colors.BoundaryNorm(bounds, len(items), **norm_kwargs)
+        norm = mpl.colors.BoundaryNorm(bounds, len(items))
 
         # center ticks within bounds and get corresponding cmap values
         ticks = tools.bin_centers(bounds)
@@ -96,14 +91,14 @@ def add_colorbar_indexed(
         # data boundaries for the colormap
         bounds = items[0] + np.array([i * delta for i in range(len(items))])
         # map data value to colormap index
-        norm = mpl.colors.BoundaryNorm(bounds, len(items) - 1, **norm_kwargs)
+        norm = mpl.colors.BoundaryNorm(bounds, len(items) - 1)
         ticks = bounds
 
         # ensure that cmap_indexed has expected number of colors
-        cmap_indexed = cmap_indexed._resample(len(items) - 1, **norm_kwargs)
+        cmap_indexed = cmap_indexed._resample(len(items) - 1)
 
     elif tick_positions is None:
-        norm = mpl.colors.Normalize(min(items), max(items), **norm_kwargs)
+        norm = mpl.colors.Normalize(min(items), max(items))
         bounds = None
 
     # get fake ScalarMappable for colorbar
