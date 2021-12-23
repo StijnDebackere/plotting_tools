@@ -39,7 +39,7 @@ def add_colorbar_indexed(
         items,
         fig=None,
         ax_cb=None,
-        tick_positions='center',
+        tick_positions='discrete',
         ticks=None,
         **cbar_kwargs,
 ):
@@ -55,8 +55,8 @@ def add_colorbar_indexed(
         figure for plotting
     ax_cb : matplotlib.axes.Axes
         axes to draw colorbar in
-    tick_positions : Optional[str] 'center' or 'bins'
-        interpret items as bin centers or bin edges
+    tick_positions : Optional[str] 'discrete', 'bin_edges' or None
+        put items as discrete ticks, as bin edges or determine automatically
     ticks : Optional[array-like]
         ticks to draw, ignored if tick_options is set
     cbar_kwargs : dict
@@ -66,31 +66,29 @@ def add_colorbar_indexed(
     -------
     matplotlib.Colorbar : colorbar instance
     """
-    ticks_options = ['center', 'bins', None]
+    ticks_options = ['discrete', 'bin_edges', None]
     if tick_positions not in ticks_options:
         raise ValueError(f'tick_positions should be one of {ticks_options}')
 
     # see https://matplotlib.org/stable/tutorials/colors/colorbar_only.html
-    if tick_positions == 'center':
+    # plot items as discrete colors with tick centred in colorbar
+    if tick_positions == 'discrete':
         # increment between ticks
-        delta = (items[-1] - items[0]) / len(items)
+        delta = np.diff(items)[0]
         # data boundaries for the colormap
-        bounds = items[0] + np.array([i * delta for i in range(len(items) + 1)])
+        bounds = np.concatenate([items - delta / 2, items[-1:] + delta / 2])
+
         # map data value to colormap index
         norm = mpl.colors.BoundaryNorm(bounds, len(items))
-
-        # center ticks within bounds and get corresponding cmap values
-        ticks = tools.bin_centers(bounds)
-
+        ticks = items
         # ensure that cmap_indexed has expected number of colors
         cmap_indexed = cmap_indexed._resample(len(items))
 
-    elif tick_positions == 'bins':
-        # increment between ticks
-        delta = (items[-1] - items[0]) / len(items)
+    # plot items as edges of colors in colorbar
+    elif tick_positions == 'bin_edges':
         # data boundaries for the colormap
-        bounds = items[0] + np.array([i * delta for i in range(len(items))])
-        # map data value to colormap index
+        bounds = items
+        # map data value to colormap index => color between items
         norm = mpl.colors.BoundaryNorm(bounds, len(items) - 1)
         ticks = bounds
 
