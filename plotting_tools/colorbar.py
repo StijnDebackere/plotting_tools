@@ -39,7 +39,7 @@ def add_colorbar_indexed(
         items,
         fig=None,
         ax_cb=None,
-        tick_positions='discrete',
+        tick_positions='centers',
         ticks=None,
         **cbar_kwargs,
 ):
@@ -55,8 +55,8 @@ def add_colorbar_indexed(
         figure for plotting
     ax_cb : matplotlib.axes.Axes
         axes to draw colorbar in
-    tick_positions : Optional[str] 'discrete', 'bin_edges' or None
-        put items as discrete ticks, as bin edges or determine automatically
+    tick_positions : Optional[str] 'centers', 'edges' or None
+        put items as discrete ticks at centers or edges of colors
     ticks : Optional[array-like]
         ticks to draw, ignored if tick_options is set
     cbar_kwargs : dict
@@ -66,38 +66,43 @@ def add_colorbar_indexed(
     -------
     matplotlib.Colorbar : colorbar instance
     """
-    ticks_options = ['discrete', 'bin_edges', None]
+    ticks_options = ['centers', 'edges', None]
     if tick_positions not in ticks_options:
         raise ValueError(f'tick_positions should be one of {ticks_options}')
 
+    ticks = None
+    bounds = None
+    ticklabels = None
+    norm = None
+
+    # plot items as discrete colors with tick centred in colors
+    if tick_positions == 'centers':
+        if cmap_indexed.N != len(items):
+            raise ValueError(f"{cmap_indexed.N=} should match {len(items)=}")
+
+        # use item index as colormap index
+        vmin, vmax = 0, len(items) - 1
+        norm = mpl.colors.NoNorm(vmin=vmin, vmax=vmax)
+
+        # put tick in middle of range for each item
+        ticks = np.arange(vmin + 0.5, vmax + 1.5, 1)
+        bounds = np.arange(0, vmax + 2, 1)
+        ticklabels = items
+
     # see https://matplotlib.org/stable/tutorials/colors/colorbar_only.html
-    # plot items as discrete colors with tick centred in colorbar
-    if tick_positions == 'discrete':
-        # increment between ticks
-        delta = np.diff(items)[0]
-        # data boundaries for the colormap
-        bounds = np.concatenate([items - delta / 2, items[-1:] + delta / 2])
-
-        # map data value to colormap index
-        norm = mpl.colors.BoundaryNorm(bounds, len(items))
-        ticks = items
-        # ensure that cmap_indexed has expected number of colors
-        cmap_indexed = cmap_indexed._resample(len(items))
-
     # plot items as edges of colors in colorbar
-    elif tick_positions == 'bin_edges':
-        # data boundaries for the colormap
-        bounds = items
+    elif tick_positions == 'edges':
+        if cmap_indexed.N != len(items) - 1:
+            raise ValueError(f"{cmap_indexed.N=} should match {len(items) - 1=}")
+
         # map data value to colormap index => color between items
+        bounds = items
+        ticks = items
         norm = mpl.colors.BoundaryNorm(bounds, len(items) - 1)
-        ticks = bounds
 
-        # ensure that cmap_indexed has expected number of colors
-        cmap_indexed = cmap_indexed._resample(len(items) - 1)
-
+    # decide colorbar automatically
     elif tick_positions is None:
         norm = mpl.colors.Normalize(min(items), max(items))
-        bounds = None
 
     # get fake ScalarMappable for colorbar
     # this will convert data values to the given colormap
@@ -115,9 +120,9 @@ def add_colorbar_indexed(
             **cbar_kwargs
         )
 
-    if ticks is not None:
+    if ticklabels is not None:
         # still need to ensure that the actual ticklabels match
-        cb.set_ticklabels(np.round(ticks, 2))
+        cb.set_ticklabels(np.round(ticklabels, 2))
         cb.minorticks_off()
 
     return cb
